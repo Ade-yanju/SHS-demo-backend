@@ -3,12 +3,16 @@ import Message from "../models/Message.js";
 
 const router = express.Router();
 
-router.get("/:jobId", async (req, res) => {
-  const messages = await Message.find({
-    jobId: req.params.jobId,
-  });
+router.get("/:jobId/:receiverId", async (req, res) => {
+  try {
+    const roomId = `${req.params.jobId}_${req.params.receiverId}`;
 
-  res.json(messages);
+    const messages = await Message.find({ roomId }).sort({ createdAt: 1 });
+
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load messages" });
+  }
 });
 
 export default router;

@@ -2,17 +2,34 @@ import mongoose from "mongoose";
 
 const requestSchema = new mongoose.Schema(
   {
-    name: String,
-    service: String,
-    location: String,
-    description: String,
-
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // THIS LINE IS MISSING IN YOUR APP
+    name: {
+      type: String,
       required: true,
     },
 
+    service: {
+      type: String,
+      required: true,
+    },
+
+    location: {
+      type: String,
+      required: true,
+    },
+
+    description: {
+      type: String,
+      required: true,
+    },
+
+    // Hirer (job owner)
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // Assigned freelancer (null until accepted)
     freelancerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -21,6 +38,7 @@ const requestSchema = new mongoose.Schema(
 
     status: {
       type: String,
+      enum: ["open", "assigned", "in-progress", "completed", "cancelled"],
       default: "open",
     },
   },

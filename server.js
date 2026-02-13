@@ -16,52 +16,37 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 /* MODELS */
 import Message from "./models/Message.js";
 import Notification from "./models/Notification.js";
+import Request from "./models/Request.js";
 
 dotenv.config();
-
-/* ======================
-   APP INIT
-====================== */
 
 const app = express();
 const server = http.createServer(app);
 
-/* ======================
-   SOCKET.IO
-====================== */
+/* ================= SOCKET.IO ================= */
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-/* ======================
-   MIDDLEWARE
-====================== */
+/* ================= MIDDLEWARE ================= */
 
 app.use(cors());
 app.use(express.json());
 
-/* REQUEST LOGGER (VERY IMPORTANT FOR ADMIN MONITORING) */
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-/* ======================
-   DATABASE
-====================== */
+/* ================= DATABASE ================= */
 
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log("DB ERROR:", err));
 
-/* ======================
-   ROUTES
-====================== */
+/* ================= ROUTES ================= */
 
 app.use("/api/auth", authRoutes);
 app.use("/api/requests", requestRoutes);
@@ -70,57 +55,60 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 
-/* ======================
-   SOCKET REALTIME SYSTEM
-====================== */
+/* =====================================================
+   REALTIME CHAT SYSTEM (FINAL ARCHITECTURE)
+===================================================== */
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
+  console.log("User connected:", socket.id);
 
-  /* JOIN PROJECT ROOM */
-  socket.on("joinRoom", ({ jobId, userId }) => {
-    socket.join(jobId);
-    console.log(`${userId} joined job room ${jobId}`);
+  /* JOIN PRIVATE ROOM */
+  socket.on("joinRoom", ({ roomId }) => {
+    socket.join(roomId);
+    console.log("Joined room:", roomId);
   });
 
   /* SEND MESSAGE */
   socket.on("sendMessage", async (data) => {
     try {
-      const message = await Message.create(data);
+      const { roomId, jobId, senderId, receiverId, text } = data;
 
-      /* EMIT TO ROOM */
-      io.to(data.jobId).emit("receiveMessage", message);
+      if (!roomId || !jobId || !senderId || !receiverId || !text) return;
 
-      /* CREATE NOTIFICATION */
-      await Notification.create({
-        user: data.receiverId,
-        text: "New message received",
-        type: "chat",
+      const message = await Message.create({
+        roomId,
+        jobId,
+        senderId,
+        receiverId,
+        text,
       });
 
-      io.emit("notification");
+      /* Emit only to this private room */
+      io.to(roomId).emit("receiveMessage", message);
+
+      /* Optional notification */
+      io.to(`user:${receiverId}`).emit("notification", {
+        type: "chat",
+        jobId,
+      });
     } catch (err) {
       console.log("Socket message error:", err);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
+    console.log("User disconnected:", socket.id);
   });
 });
 
-/* ======================
-   GLOBAL ERROR HANDLER
-====================== */
+/* ================= GLOBAL ERROR ================= */
 
 app.use((err, req, res, next) => {
   console.log("SERVER ERROR:", err);
   res.status(500).json({ message: "Server error" });
 });
 
-/* ======================
-   START SERVER
-====================== */
+/* ================= START ================= */
 
 const PORT = process.env.PORT || 5000;
 

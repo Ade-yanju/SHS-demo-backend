@@ -1,34 +1,42 @@
 import mongoose from "mongoose";
 
-const quoteSchema = new mongoose.Schema({
-  jobId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Request",
-  },
+const quoteSchema = new mongoose.Schema(
+  {
+    jobId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Request",
+      required: true,
+    },
 
-  freelancerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
+    freelancerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
-  hirerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
+    hirerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
-  price: Number,
-  message: String,
+    price: {
+      type: Number,
+      required: true,
+    },
 
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "rejected"],
-    default: "pending",
-  },
+    message: {
+      type: String,
+      required: true,
+    },
 
-  createdAt: {
-    type: Date,
-    default: Date.now,
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "rejected"],
+      default: "pending",
+    },
   },
-});
+  { timestamps: true },
+);
 
 export default mongoose.model("Quote", quoteSchema);
