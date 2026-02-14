@@ -31,7 +31,12 @@ const io = new Server(server, {
 
 /* ================= MIDDLEWARE ================= */
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://shs-demo-ten.vercel.app/"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.use((req, res, next) => {
